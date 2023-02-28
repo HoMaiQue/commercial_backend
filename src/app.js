@@ -12,11 +12,12 @@ app.use(compression());
 require("./dbs/init.mongodb");
 
 //init router
-app.get("/", (reg, res, next) => {
-    return res.status(200).json({
-        message: "xin chao",
-    });
-});
+// app.get("/", (reg, res, next) => {
+//     return res.status(200).json({
+//         message: "xin chao",
+//     });
+// });
+app.use("/", require("./routes"))
 // handle errors
 
 module.exports = app;
