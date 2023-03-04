@@ -2,9 +2,10 @@
 ###signup
 POST {{url_dev}}/shop/signup
 Content-Type: application/json 
+x-api-key: 2859981c60edd950b87aebe7aa83bdacfbe15a30ece3df19f836816cd1051a098bfd8ab3d310bc14e238f963f25400c75fa16002b06786a663b130be0f8e9e3e
 
 {
-    "name": "shop 123",
-    "email": "shop135e21@gmail.com",
+    "name": "shop 1",
+    "email": "shop1@gmail.com",
     "password": "123abc"
 }
