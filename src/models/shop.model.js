@@ -1,9 +1,9 @@
 "use strict";
-const mongoose = require("mongoose"); // Erase if already required
+const {Schema, model} = require("mongoose"); // Erase if already required
 const DOCUMENT_NAME = "shop";
 const COLLECTION_NAME = "shops";
 // Declare the Schema of the Mongo model
-var shopSchema = new mongoose.Schema(
+var shopSchema = Schema(
     {
         name: {
             type: String,
@@ -21,7 +21,7 @@ var shopSchema = new mongoose.Schema(
             default: "inActive",
         },
         verify: {
-            type: type.Schema.boolean,
+            type: Schema.Types.Boolean,
             default: false,
         },
         password: {

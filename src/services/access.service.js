@@ -1,7 +1,10 @@
 "use strict";
 const shopModel = require("../models/shop.model");
 const bcrypt = require("bcrypt");
-const crypto = require("crypto");
+const crypto = require("node:crypto");
+const KeyTokenService = require("./keyToken.service");
+const { createTokenPair } = require("../auth/authUtils");
+const { getInfoData } = require("../utils");
 const shopRoles = {
     SHOP: "SHOP",
     WRITER: "WRITER",
@@ -9,7 +12,7 @@ const shopRoles = {
     ADMIN: "ADMIN",
 };
 class AccessService {
-    static signUp = async ([name, email, password]) => {
+    static signUp = async ({ name, email, password }) => {
         try {
             // step1 check email exists
             const holderShop = await shopModel.findOne({ email }).lean();
@@ -19,7 +22,7 @@ class AccessService {
                     message: "Email already registered",
                 };
             }
-            const passwordHash = await bcrypt(password, 10);
+            const passwordHash = await bcrypt.hash(password, 10);
             const newShop = await shopModel.create({
                 name,
                 email,
@@ -31,14 +34,74 @@ class AccessService {
                 //create privateKey and publicKey: không lưu private key vào trong hệ thống chỉ lưu public key vào
                 // private key dùng để sign token
                 //public key dùng để verify token
-                const { privateKey, publicKey } = crypto.generateKeyPairSync(
-                    "rsa",
-                    {
-                        modulusLength: 4096,
-                    }
+                // const { privateKey, publicKey } = crypto.generateKeyPairSync(
+                //     "rsa",
+                //     {
+                //         modulusLength: 4096,
+                //         publicKeyEncoding: {
+                //             type: "pkcs1",
+                //             format: "pem",
+                //         },
+                //         privateKeyEncoding: {
+                //             type: "pkcs1",
+                //             format: "pem",
+                //         },
+                //     }
+                // );
+                // cách thuong hay dung v2
+                const privateKey = crypto.randomBytes(64).toString("hex");
+                const publicKey = crypto.randomBytes(64).toString("hex");
+
+                // const publicKeyString = await KeyTokenService.createKeyToken({
+                //     userId: newShop._id,
+                //     publicKey,
+                // });
+
+                const keyStore = await KeyTokenService.createKeyToken({
+                    userId: newShop._id,
+                    publicKey,
+                    privateKey,
+                });
+
+                // if (!publicKeyString) {
+                //     return {
+                //         code: "xxxx",
+                //         message: "PublicKey error",
+                //     };
+                // }
+                if (!keyStore) {
+                    return {
+                        code: "xxxx",
+                        message: "PublicKey error",
+                    };
+                }
+                // const publicKeyObject = crypto.createPublicKey(publicKeyString);
+                // const tokens = await createTokenPair(
+                //     { userId: newShop._id, email },
+                //     publicKeyObject,
+                //     privateKey
+                // );
+
+                const tokens = await createTokenPair(
+                    { userId: newShop._id, email },
+                    publicKey,
+                    privateKey
                 );
-                console.log("private key", privateKey, "public key", publicKey);
+                return {
+                    code: 201,
+                    metadata: {
+                        shop: getInfoData({
+                            fields: ["_id", "name", "email"],
+                            object: newShop,
+                        }),
+                        tokens,
+                    },
+                };
             }
+            return {
+                code: 200,
+                metadata: null,
+            };
         } catch (error) {
             return {
                 code: "xxx",

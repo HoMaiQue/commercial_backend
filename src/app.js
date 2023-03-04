@@ -8,6 +8,13 @@ const app = express();
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(compression());
+// express version 4  ho tro ue code nen khong can body parse
+app.use(express.json());
+app.use(
+    express.urlencoded({
+        extended: true,
+    })
+);
 // init db
 require("./dbs/init.mongodb");
 
@@ -17,7 +24,7 @@ require("./dbs/init.mongodb");
 //         message: "xin chao",
 //     });
 // });
-app.use("/", require("./routes"))
+app.use("/", require("./routes"));
 // handle errors
 
 module.exports = app;
