@@ -6,6 +6,7 @@ const KeyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
 const { BadRequestError } = require("../core/error.response");
+const { findByEmail } = require("./shop.service");
 const shopRoles = {
     SHOP: "SHOP",
     WRITER: "WRITER",
@@ -13,6 +14,43 @@ const shopRoles = {
     ADMIN: "ADMIN",
 };
 class AccessService {
+    /* check email in db
+       match password
+       create accessToken vs RefreshToken and save
+       generate token
+       get data return login
+    */
+    static login = async ({ email, password, refreshToken = null }) => {
+        // refresh token khi user dang nhap lai ma da co cookie thi nen gan theo de xoa token trong db di de khoi truy van lai vao db
+        const foundShop = await findByEmail({ email });
+        if (!foundShop) throw new BadRequestError("shop not registered");
+
+        const match = bcrypt.compare(password, foundShop.password);
+       
+        if (!match) throw new BadRequestError("Authentication error");
+
+        const privateKey = crypto.randomBytes(64).toString("hex");
+        const publicKey = crypto.randomBytes(64).toString("hex");
+        const {_id: userId} = foundShop
+        const tokens = await createTokenPair(
+            { userId, email },
+            publicKey,
+            privateKey
+        );
+
+        await KeyTokenService.createKeyToken({
+            refreshToken: tokens.refreshToken,
+            privateKey, publicKey,
+            userId
+        })
+        return {
+            shop: getInfoData({
+                fields: ["_id", "name", "email"],
+                object: foundShop,
+            }),
+            tokens,
+        };
+    };
     static signUp = async ({ name, email, password }) => {
         // step1 check email exists
         const holderShop = await shopModel.findOne({ email }).lean();

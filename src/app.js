@@ -19,11 +19,7 @@ app.use(
 require("./dbs/init.mongodb");
 
 //init router
-// app.get("/", (reg, res, next) => {
-//     return res.status(200).json({
-//         message: "xin chao",
-//     });
-// });
+
 app.use("/", require("./routes"));
 // handle errors
 app.use((reg, res, next) => {
