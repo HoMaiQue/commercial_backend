@@ -36,9 +36,5 @@ const permission = (permission) => {
         return next();
     };
 };
-const asyncHandler = (fn) => {
-    return (reg, res, next) => {
-        fn(reg, res, next).catch(next);
-    };
-};
-module.exports = { apiKey, permission, asyncHandler };
+
+module.exports = { apiKey, permission };

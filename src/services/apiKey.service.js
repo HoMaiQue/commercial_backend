@@ -12,4 +12,6 @@ const findById = async (key) => {
     const objectKey = await apiKeysModel.findOne({ key, status: true }).lean();
     return objectKey;
 };
+
+
 module.exports = { findById };

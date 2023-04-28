@@ -7,6 +7,7 @@ const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
 const { BadRequestError } = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
+const keyTokenModel = require("../models/keyToken.model");
 const shopRoles = {
     SHOP: "SHOP",
     WRITER: "WRITER",
@@ -14,6 +15,11 @@ const shopRoles = {
     ADMIN: "ADMIN",
 };
 class AccessService {
+
+    static logout = async({keyStore})=> {
+        const delKey = await KeyTokenService.removeKeyById(keyStore._id)
+        return delKey
+    }
     /* check email in db
        match password
        create accessToken vs RefreshToken and save
