@@ -24,7 +24,7 @@ var productSchema = Schema(
             required: true,
         },
         product_type: {
-            type: Number,
+            type: String,
             required: true,
             enum: ["Electronics", "Clothing", "Furniture"],
         },
@@ -42,6 +42,8 @@ const clothingSchema = Schema(
         brand: { type: String, required: true },
         size: String,
         material: String,
+        product_shop: {type: Schema.Types.ObjectId, ref: "Shop"}
+
     },
     {
         collection: "clothes",
@@ -54,6 +56,7 @@ const electronicSchema = Schema(
         manufacturer: { type: String, required: true },
         model: String,
         color: String,
+        product_shop: {type: Schema.Types.ObjectId, ref: "Shop"}
     },
     {
         collection: "electronics",

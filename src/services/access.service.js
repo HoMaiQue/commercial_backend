@@ -5,7 +5,11 @@ const crypto = require("node:crypto");
 const KeyTokenService = require("./keyToken.service");
 const { createTokenPair, verifyJWT } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
-const { BadRequestError, AuthFailureError, ForbiddenError } = require("../core/error.response");
+const {
+    BadRequestError,
+    AuthFailureError,
+    ForbiddenError,
+} = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
 const keyTokenModel = require("../models/keyToken.model");
 const shopRoles = {
@@ -17,50 +21,48 @@ const shopRoles = {
 class AccessService {
     /*
         check token used
-    */ 
-    static handleRefreshToken = async (refreshToken) => {
-        //check token da su dung hay chua
-        const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken)
+    */
+    static handleRefreshToken = async ({ refreshToken, user, keyStore }) => {
+        const { userId, email } = user;
 
-        if(foundToken ){
-            //decode xem may la thang nao
-            const {userId, email} = await verifyJWT(refreshToken, foundToken.privateKey)
-            //xoa
-            await KeyTokenService.deleteKeyById(userId)
-            throw new ForbiddenError("something went wrong !! please login again")
+        if (keyStore.refreshTokenUsed.includes(refreshToken)) {
+            await KeyTokenService.deleteKeyById(userId);
+            throw new ForbiddenError(
+                "something went wrong !! please login again"
+            );
         }
 
-        // No
-        const holderToken = await KeyTokenService.findByRefreshToken(refreshToken)
-        if(!holderToken) throw new AuthFailureError("shop not register")
+        if (keyStore.refreshToken !== refreshToken) {
+            throw new AuthFailureError("shop not register");
+        }
+        const foundShop = await findByEmail({ email });
+        if (!foundShop) throw new AuthFailureError("shop not register");
 
-        //verify token
-        const {userId, email} = await verifyJWT(refreshToken, holderToken.privateKey)
-        const foundShop = await findByEmail({email})
-        if(!foundShop) throw new AuthFailureError("shop not register")
+        //create 1 cap moi
+        const tokens = await createTokenPair(
+            { userId, email },
+            keyStore.publicKey,
+            keyStore.privateKey
+        );
 
-        //create 1 cap moi 
-        const tokens = await createTokenPair({userId, email}, holderToken.publicKey, holderToken.privateKey)
-
-        await holderToken.update({
+        await keyStore.update({
             $set: {
-                refreshToken: tokens.refreshToken
+                refreshToken: tokens.refreshToken,
             },
             $addToSet: {
-                refreshTokenUsed: refreshToken
-            }
-
-        })
+                refreshTokenUsed: refreshToken,
+            },
+        });
 
         return {
-            user: {userId, email},
-            tokens
-        }
-    }
-    static logout = async({keyStore})=> {
-        const delKey = await KeyTokenService.removeKeyById(keyStore._id)
-        return delKey
-    }
+            user,
+            tokens,
+        };
+    };
+    static logout = async ({ keyStore }) => {
+        const delKey = await KeyTokenService.removeKeyById(keyStore._id);
+        return delKey;
+    };
     /* check email in db
        match password
        create accessToken vs RefreshToken and save
@@ -73,12 +75,12 @@ class AccessService {
         if (!foundShop) throw new BadRequestError("shop not registered");
 
         const match = bcrypt.compare(password, foundShop.password);
-       
+
         if (!match) throw new BadRequestError("Authentication error");
 
         const privateKey = crypto.randomBytes(64).toString("hex");
         const publicKey = crypto.randomBytes(64).toString("hex");
-        const {_id: userId} = foundShop
+        const { _id: userId } = foundShop;
         const tokens = await createTokenPair(
             { userId, email },
             publicKey,
@@ -87,9 +89,10 @@ class AccessService {
 
         await KeyTokenService.createKeyToken({
             refreshToken: tokens.refreshToken,
-            privateKey, publicKey,
-            userId
-        })
+            privateKey,
+            publicKey,
+            userId,
+        });
         return {
             shop: getInfoData({
                 fields: ["_id", "name", "email"],
