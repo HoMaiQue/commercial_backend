@@ -15,7 +15,9 @@ const {
     searchProductByUser,
     findAllProducts,
     findProduct,
+    updateProductById,
 } = require("../models/repositories/product.repo");
+const { removeUndefinedObject, updateNestedObject } = require("../utils");
 // define factory class
 
 class ProductFactory {
@@ -29,10 +31,10 @@ class ProductFactory {
         if (!productClass) throw new BadRequestError("invalid type");
         return new productClass(payload).createProduct();
     }
-    static async updateProduct(type, payload) {
+    static async updateProduct(type, product_id, payload) {
         const productClass = ProductFactory.productRegistry[type];
         if (!productClass) throw new BadRequestError("invalid type");
-        return new productClass(payload).createProduct();
+        return new productClass(payload).updateProduct(product_id);
     }
 
     /**
@@ -112,6 +114,9 @@ class Product {
     async createProduct(product_id) {
         return await product.create({ ...this, _id: product_id });
     }
+    async updateProduct(product_id, payload) {
+        return await updateProductById({ product_id, payload, model: product });
+    }
 }
 // define sub-class for type clothing
 class Clothing extends Product {
@@ -127,6 +132,26 @@ class Clothing extends Product {
         const newProduct = await super.createProduct(newClothing._id);
         if (!newProduct) throw new BadRequestError("create new product error");
         return newProduct;
+    }
+
+    async updateProduct(product_id) {
+        /**
+         * 1. remove attribute has null and undefined
+         * 2. check xem update o dau ?
+         */
+        const objectParams = removeUndefinedObject(this);
+        if (objectParams.product_attributes) {
+            await updateProductById({
+                product_id,
+                payload: updateNestedObject(objectParams.product_attributes),
+                model: clothing,
+            });
+        }
+        const updateProduct = await super.updateProduct(
+            product_id,
+            updateNestedObject(objectParams)
+        );
+        return updateProduct;
     }
 }
 class Electronic extends Product {
