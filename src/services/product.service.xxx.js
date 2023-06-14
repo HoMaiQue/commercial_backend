@@ -7,6 +7,7 @@ const {
     electronic,
     furniture,
 } = require("../models/product.model");
+const { insertInventory } = require("../models/repositories/inventory.repo");
 const {
     findAllDraftForShop,
     publishProductByShop,
@@ -17,6 +18,7 @@ const {
     findProduct,
     updateProductById,
 } = require("../models/repositories/product.repo");
+
 const { removeUndefinedObject, updateNestedObject } = require("../utils");
 // define factory class
 
@@ -112,7 +114,15 @@ class Product {
     //create new product
 
     async createProduct(product_id) {
-        return await product.create({ ...this, _id: product_id });
+        const newProduct = await product.create({ ...this, _id: product_id });
+        if (newProduct) {
+            await insertInventory({
+                product_id: newProduct._id,
+                shopId: this.product_shop,
+                stock: this.product_quantity,
+            });
+        }
+        return newProduct;
     }
     async updateProduct(product_id, payload) {
         return await updateProductById({ product_id, payload, model: product });
