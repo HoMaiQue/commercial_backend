@@ -47,6 +47,7 @@ var discountSchema = new Schema(
         },
         discount_max_uses_per_user: { type: Number, required: true },
         discount_min_order_value: { type: Number, required: true },
+        discount_max_value: { type: Number, required: true },
         discount_shopId: { type: Schema.Types.ObjectId, ref: "shop" },
         discount_isActive: { type: Boolean, required: true },
         discount_applies_to: {
