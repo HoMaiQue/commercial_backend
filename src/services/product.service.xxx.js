@@ -38,7 +38,9 @@ class ProductFactory {
         if (!productClass) throw new BadRequestError("invalid type");
         return new productClass(payload).updateProduct(product_id);
     }
-
+    /**
+     * 
+     */
     /**
      * @desc get all draft for shop
      * @param {Number} limit
