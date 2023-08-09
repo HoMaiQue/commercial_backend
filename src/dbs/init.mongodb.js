@@ -24,6 +24,8 @@ class Database {
             })
             .catch((e) => console.log("Error Connect"));
     }
+
+    
     static getInstance() {
         if (!Database.instance) {
             Database.instance = new Database();

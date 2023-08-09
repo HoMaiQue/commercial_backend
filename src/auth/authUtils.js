@@ -122,7 +122,7 @@ const verifyJWT = async(token, keySecret)=> {
 }
 module.exports = {
     createTokenPair,
-    authentication,
+    authentication, 
     verifyJWT,
     authenticationV2
 };

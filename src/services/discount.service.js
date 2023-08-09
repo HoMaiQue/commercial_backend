@@ -99,8 +99,6 @@ class DiscountService {
         }
 
         const { discount_applies_to, discount_product_ids } = foundDiscount;
-        console.log(discount_applies_to);
-        console.log(discount_product_ids);
         let products;
         if (discount_applies_to === "all") {
             products = await findAllProducts({
