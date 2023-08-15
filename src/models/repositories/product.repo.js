@@ -59,11 +59,13 @@ const searchProductByUser = async ({ keySearch }) => {
 const publishProductByShop = async ({ product_shop, product_id }) => {
     const foundShop = await product.findOne({
         product_shop: new Types.ObjectId(product_shop),
-        product_id: new Types.ObjectId(product_id),
+        _id: new Types.ObjectId(product_id),
     });
+    console.log('this is test',foundShop)
     if (!foundShop) return null;
     foundShop.isDraft = false;
     foundShop.isPublished = true;
+    console.log(foundShop)
     const { modifiedCount } = await foundShop.update(foundShop);
     return modifiedCount;
 };
@@ -92,6 +94,18 @@ const queryProduct = async ({ query, limit, skip }) => {
 const getProductById = async(productId)=> {
     return await product.findOne({_id: convertToObjectIdMongodb(productId)}).lean()
 }
+const checkProductByServer = async(products)=> {
+    return await Promise.all(products.map(async product=> {
+        const foundProduct =await getProductById(product.productId)
+        if(foundProduct){
+            return {
+                price: foundProduct.product_price,
+                quantity: product.quantity,
+                productId: product.productId
+            }
+        }
+    }))
+}
 module.exports = {
     getProductById,
     findAllDraftForShop,
@@ -102,4 +116,5 @@ module.exports = {
     findAllProducts,
     findProduct,
     updateProductById,
+    checkProductByServer
 };
