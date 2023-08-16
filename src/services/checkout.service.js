@@ -6,6 +6,8 @@ const {
     checkProductByServer,
 } = require("../models/repositories/product.repo");
 const { getDiscountAmount } = require("./discount.service");
+const { acquireLock, releaseLock } = require("./redis.service");
+const orderModel = require("../models/order.model");
 class CheckoutService {
     /*
         {
@@ -112,6 +114,74 @@ class CheckoutService {
             checkout_order,
         };
     }
+    static async orderByUser({
+        shop_order_ids,
+        cartId,
+        userId,
+        user_address = {},
+        user_payment = {},
+    }) {
+        const { shop_order_ids_new, checkout_order } =
+            await CheckoutService.checkoutReview({
+                cartId,
+                userId,
+                shop_order_ids: shop_order_ids,
+            });
+        // thuat toan flat map
+        // check lai 1 lan nua xem vo vuot ton kho hay khong
+        // get new array product
+        const products = shop_order_ids_new.flatMap(
+            (order) => order.item_products
+        );
+        console.log("[1]:", products);
+        //áp dụng optimistic lock (Khóa lạc quan) có nghĩa là nó đã chặn luồng đi của nhiều luồng nó
+        // cho phép 1 luồng đi vào và trả giá trị lại sau đó đến luồng khác luồng khác nó sẻ được sử dụng trong trường hợp không để tồn kho quá bán
+        const acquireProduct = [];
+        for (let i = 0; i < products.length; i++) {
+            const { productId, quantity } = products[i];
+            const keyLock = await acquireLock(productId, quantity, cartId);
+            acquireProduct.push(keyLock ? true : false);
+            if(keyLock){
+                await releaseLock(keyLock)
+            }
+        }
+
+        //check if co 1 san pham het hang trong kho
+        if(acquireProduct.includes(false)){
+            throw new BadRequestError("Some product has already been update please go back cart... ")
+        }
+
+        const newOrder = await orderModel.create({
+            order_userId: userId,
+            order_checkout: checkout_order,
+            order_shipping: user_address,
+            order_payment: user_payment,
+            order_products: shop_order_ids_new
+        })
+        // neu truong hop thanh cong remove product co trong gio hang
+        if(newOrder){
+            //remove product in my cart
+
+        }
+        return newOrder
+    }
+    // query order [User]
+    static async getOrdersByUser(){
+
+    }
+    //get order using id [user]
+    static async getOneOrderByUser(){
+
+    }
+    // cancel order by [user]
+    static async cancelOrderByUser(){
+
+    }
+    // update order by status [shop | admin]
+    static async updateOrderStatusByShop(){
+
+    }
+
 }
 
 module.export = CheckoutService;
