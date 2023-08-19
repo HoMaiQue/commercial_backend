@@ -20,6 +20,7 @@ const {
 } = require("../models/repositories/product.repo");
 
 const { removeUndefinedObject, updateNestedObject } = require("../utils");
+const NotificationService = require("./notification.service");
 // define factory class
 
 class ProductFactory {
@@ -33,14 +34,14 @@ class ProductFactory {
         if (!productClass) throw new BadRequestError("invalid type");
         return new productClass(payload).createProduct();
     }
-    
+
     static async updateProduct(type, product_id, payload) {
         const productClass = ProductFactory.productRegistry[type];
         if (!productClass) throw new BadRequestError("invalid type");
         return new productClass(payload).updateProduct(product_id);
     }
     /**
-     * 
+     *
      */
     /**
      * @desc get all draft for shop
@@ -73,7 +74,12 @@ class ProductFactory {
             sort,
             filter,
             page,
-            select: ["product_name", "product_price", "product_thumb", "product_shop"],
+            select: [
+                "product_name",
+                "product_price",
+                "product_thumb",
+                "product_shop",
+            ],
         });
     }
     static async findProduct({ product_id }) {
@@ -124,6 +130,18 @@ class Product {
                 shopId: this.product_shop,
                 stock: this.product_quantity,
             });
+            //push noti to system  collection
+            NotificationService.pushNotiToSystem({
+                type: "SHOP-001",
+                receiveId: 1,
+                senderId: this.product_shop,
+                options: {
+                    product_name: this.product_name,
+                    shop_name: this.product_shop,
+                },
+            }).then((rs) => {
+                console.log(rs);
+            }).catch(console.error);
         }
         return newProduct;
     }

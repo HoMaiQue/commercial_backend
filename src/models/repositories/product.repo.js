@@ -6,7 +6,11 @@ const {
     clothing,
     furniture,
 } = require("../../models/product.model");
-const { getSelectData, unGetSelectData, convertToObjectIdMongodb } = require("../../utils");
+const {
+    getSelectData,
+    unGetSelectData,
+    convertToObjectIdMongodb,
+} = require("../../utils");
 const { Types } = require("mongoose");
 const findAllDraftForShop = async ({ query, limit, skip }) => {
     return await queryProduct({ query, limit, skip });
@@ -26,7 +30,7 @@ const findAllProducts = async ({ limit, sort, page, filter, select }) => {
         .lean();
     return products;
 };
-const findProduct = async ({ product_id, unSelect }) => {
+const findProduct = async ({ product_id, unSelect=[] }) => {
     return await product.findById(product_id).select(unGetSelectData(unSelect));
 };
 
@@ -61,11 +65,11 @@ const publishProductByShop = async ({ product_shop, product_id }) => {
         product_shop: new Types.ObjectId(product_shop),
         _id: new Types.ObjectId(product_id),
     });
-    console.log('this is test',foundShop)
+    console.log("this is test", foundShop);
     if (!foundShop) return null;
     foundShop.isDraft = false;
     foundShop.isPublished = true;
-    console.log(foundShop)
+    console.log(foundShop);
     const { modifiedCount } = await foundShop.update(foundShop);
     return modifiedCount;
 };
@@ -91,21 +95,25 @@ const queryProduct = async ({ query, limit, skip }) => {
         .lean()
         .exec();
 };
-const getProductById = async(productId)=> {
-    return await product.findOne({_id: convertToObjectIdMongodb(productId)}).lean()
-}
-const checkProductByServer = async(products)=> {
-    return await Promise.all(products.map(async product=> {
-        const foundProduct =await getProductById(product.productId)
-        if(foundProduct){
-            return {
-                price: foundProduct.product_price,
-                quantity: product.quantity,
-                productId: product.productId
+const getProductById = async (productId) => {
+    return await product
+        .findOne({ _id: convertToObjectIdMongodb(productId) })
+        .lean();
+};
+const checkProductByServer = async (products) => {
+    return await Promise.all(
+        products.map(async (product) => {
+            const foundProduct = await getProductById(product.productId);
+            if (foundProduct) {
+                return {
+                    price: foundProduct.product_price,
+                    quantity: product.quantity,
+                    productId: product.productId,
+                };
             }
-        }
-    }))
-}
+        })
+    );
+};
 module.exports = {
     getProductById,
     findAllDraftForShop,
@@ -116,5 +124,5 @@ module.exports = {
     findAllProducts,
     findProduct,
     updateProductById,
-    checkProductByServer
+    checkProductByServer,
 };
